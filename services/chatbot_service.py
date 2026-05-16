@@ -1,4 +1,5 @@
 import os
+import re
 
 from dotenv import load_dotenv
 
@@ -11,13 +12,13 @@ import google.generativeai as genai
 load_dotenv()
 
 # =========================================
-# GEMINI CONFIGURATION
+# GEMINI CONFIG
 # =========================================
 
 genai.configure(
 
     api_key=os.getenv(
-        "AIzaSyB1kB0nuJBeTYKBf2myap0Unsqk7-WoBew"
+        "GEMINI_API_KEY"
     )
 
 )
@@ -44,13 +45,46 @@ medical assistant.
 
 Rules:
 
-- Only discuss retina disease
-- Give concise medical answers
-- Suggest doctor consultation
-- Avoid unrelated topics
-- Be friendly and professional
+- ONLY answer retina and diabetes related questions
+- Give short and clean answers
+- DO NOT use markdown symbols
+- DO NOT use ** or *
+- DO NOT repeatedly introduce yourself
+- Speak professionally
+- Use plain readable English
+- Suggest doctor consultation if necessary
 
 """
+
+# =========================================
+# CLEAN RESPONSE
+# =========================================
+
+def clean_response(text):
+
+    # Remove markdown symbols
+
+    text = re.sub(r"\*\*", "", text)
+
+    text = re.sub(r"\*", "", text)
+
+    text = re.sub(r"#+", "", text)
+
+    # Remove repeated intro
+
+    text = text.replace(
+        "Hello! I am RetinaAI.",
+        ""
+    )
+
+    text = text.replace(
+        "Hello! I am RetinaAI,",
+        ""
+    )
+
+    text = text.strip()
+
+    return text
 
 # =========================================
 # CHATBOT FUNCTION
@@ -76,7 +110,13 @@ def get_chatbot_response(user_message):
 
         )
 
-        return response.text
+        cleaned_text = clean_response(
+
+            response.text
+
+        )
+
+        return cleaned_text
 
     except Exception as e:
 
@@ -85,12 +125,6 @@ def get_chatbot_response(user_message):
 Gemini API Error:
 
 {str(e)}
-
-Possible Reasons:
-- Free quota exceeded
-- Invalid API key
-- Internet issue
-- Too many requests
 
 Please try again later.
 
