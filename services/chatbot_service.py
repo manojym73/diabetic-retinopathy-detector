@@ -129,3 +129,25 @@ Gemini API Error:
 Please try again later.
 
 """
+
+# =========================================
+# DYNAMIC RECOMMENDATION
+# =========================================
+
+def get_dynamic_recommendation(severity, confidence):
+
+    prompt = f"""
+    The patient's retina scan was analyzed by our AI.
+    Result: {severity} Diabetic Retinopathy.
+    Confidence: {confidence}%.
+    
+    Provide a short, professional, 2-sentence medical recommendation for the patient. 
+    Do not use markdown. Do not include introductory text. 
+    Act as RetinaAI.
+    """
+    
+    try:
+        response = gemini_model.generate_content(prompt)
+        return clean_response(response.text)
+    except Exception as e:
+        return "Please consult an ophthalmologist for a thorough eye examination."

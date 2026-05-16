@@ -334,7 +334,13 @@ def home():
 
 def predict():
 
+    if 'image' not in request.files:
+        return "No file uploaded", 400
+
     file = request.files["image"]
+
+    if file.filename == '':
+        return "No selected file", 400
 
     if file:
 
@@ -349,32 +355,58 @@ def predict():
 
         file.save(filepath)
 
-        prediction = random.choice(
-            severity_levels
-        )
+        from services.predict_service import predict_image
+        prediction, confidence, probs_list = predict_image(filepath)
 
-        confidence = round(
-            random.uniform(85, 99),
-            2
-        )
+        from services.chatbot_service import get_dynamic_recommendation
+        recommendation = get_dynamic_recommendation(prediction, confidence)
 
-        recommendation = recommendations[
-            prediction
-        ]
+        # Generate enhanced medical view image
+        from PIL import Image, ImageOps
+        try:
+            img = Image.open(filepath).convert("RGB")
+            gray = ImageOps.grayscale(img)
+            enhanced = ImageOps.autocontrast(gray)
+            enhanced_filename = "enhanced_" + filename
+            enhanced_filepath = os.path.join(app.config["UPLOAD_FOLDER"], enhanced_filename)
+            enhanced.save(enhanced_filepath)
+        except Exception as e:
+            enhanced_filepath = filepath
 
         return render_template(
 
             "result.html",
 
             image_path=filepath,
+            enhanced_image_path=enhanced_filepath,
 
             prediction=prediction,
 
             confidence=confidence,
+            probs_list=probs_list,
 
             recommendation=recommendation
 
         )
+
+# =========================================
+# CLINICAL REPORT
+# =========================================
+
+@app.route("/report", methods=["POST"])
+def generate_report():
+    image_path = request.form.get("image_path")
+    prediction = request.form.get("prediction")
+    confidence = request.form.get("confidence")
+    recommendation = request.form.get("recommendation")
+    
+    return render_template(
+        "report.html",
+        image_path=image_path,
+        prediction=prediction,
+        confidence=confidence,
+        recommendation=recommendation
+    )
 
 # =========================================
 # CHATBOT PAGE
@@ -435,5 +467,7 @@ def chat():
 if __name__ == "__main__":
 
     app.run(
+        host="0.0.0.0",
+        port=5000,
         debug=True
     )
