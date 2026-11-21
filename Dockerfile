@@ -16,11 +16,15 @@ RUN apt-get update && apt-get install -y \
 # Copy the requirements file into the container
 COPY requirements.txt .
 
+# Upgrade pip before using the PyTorch CPU index; older versions can misread
+# normalized package names from the index and fall back to source builds.
+RUN python -m pip install --no-cache-dir --upgrade pip
+
 # Install PyTorch CPU version first to save massive amounts of space (since GPU passthrough on Docker Windows requires custom setup)
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+RUN python -m pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Install the rest of the dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire application code into the container
 COPY . .
